@@ -1,0 +1,35 @@
+{
+  "name": "appwrite-typescript",
+  "version": "1.0.0",
+  "description": "Generate typescript types for Appwrite API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && copyfiles -u 1 src/**/*.ejs dist",
+    "start": "cd dist && node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/okkindel/appwrite-typescript.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/okkindel/appwrite-typescript/issues"
+  },
+  "homepage": "https://github.com/okkindel/appwrite-typescript#readme",
+  "devDependencies": {
+    "@types/ejs": "^3.1.5",
+    "@types/node": "^22.5.0",
+    "copyfiles": "^2.4.1",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "node-appwrite": "^13.0.0"
+  }
+}

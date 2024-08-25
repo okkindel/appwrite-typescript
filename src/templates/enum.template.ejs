@@ -1,0 +1,7 @@
+export const <%= name %> = {
+  <%_ elements.forEach(element => { -%>
+  '<%= element _%>': '<%= element _%>',
+  <%_ }); -%>
+} as const;
+
+export type <%= name %> = (typeof <%= name %>)[keyof typeof <%= name %>];
