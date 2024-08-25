@@ -62,8 +62,8 @@ export class CollectionBuilder {
       name: interfaceName,
       attributes: this.attributes,
     });
+    content += "\n";
 
-    console.log("data", content);
     return content;
   }
 

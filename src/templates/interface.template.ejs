@@ -2,4 +2,4 @@ export interface <%= name %> extends Partial<Models.Document> {
 <%_ attributes.forEach(attribute => { -%>
   <%= attribute.key _%><%_ if (attribute.optional) { -%>?<%_ } -%>: <%- attribute.type _%><%_ if (attribute.array) { -%>[]<%_ } _%>;
 <%_ }); -%>
-};
+}

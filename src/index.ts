@@ -1,15 +1,20 @@
-import { existsSync, mkdirSync, readFileSync } from "fs";
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
 import { CollectionBuilder } from "./collection.builder";
 import { Client, Databases } from "node-appwrite";
 
 interface Config {
   confFile?: string;
+  outName?: string;
   outDir?: string;
 }
 
 async function initialize(config: Config): Promise<void> {
   try {
-    const { confFile = "./config.json", outDir = "./types" } = config;
+    const {
+      outName = "appwrite.models.d.ts",
+      confFile = "./config.json",
+      outDir = "./types",
+    } = config;
     const client = new Client();
 
     // Read the configuration file
@@ -29,10 +34,15 @@ async function initialize(config: Config): Promise<void> {
       mkdirSync(outDir, { recursive: true });
     }
 
+    let output = `import type { Models } from 'appwrite';\n\n`;
+
     for (const collection of collections) {
       const builder = new CollectionBuilder(collection);
-      builder.retrieveEnumValues().parseAttributes().build();
+      output += await builder.retrieveEnumValues().parseAttributes().build();
     }
+
+    // Write the output to a file
+    writeFileSync(`${outDir}/${outName}`, output);
   } catch (error) {
     console.error("Something went wrong", error);
   }
