@@ -1,5 +1,6 @@
-import { renderFile } from "ejs";
-import { Models } from "node-appwrite";
+import { LibConfig } from './models/lib-config.model';
+import { Models } from 'node-appwrite';
+import { renderFile } from 'ejs';
 
 interface AttributePayload {
   key: string;
@@ -9,131 +10,91 @@ interface AttributePayload {
 }
 
 export class CollectionBuilder {
-  private originalCollection: Models.Collection;
-  private enums: Record<string, string[]> = {};
-  private attributes: AttributePayload[] = [];
+  private readonly _originalCollection: Models.Collection;
+  private readonly _config: LibConfig;
 
-  constructor(collection: Models.Collection) {
-    this.originalCollection = collection;
+  private _enums: Record<string, string[]> = {};
+  private _attributes: AttributePayload[] = [];
+
+  constructor(collection: Models.Collection, config: LibConfig) {
+    this._originalCollection = collection;
+    this._config = config;
   }
 
   public retrieveEnumValues(): CollectionBuilder {
-    for (const field of this.originalCollection
-      .attributes as unknown as AppwriteAttribute[]) {
-      if (field.format === "enum") {
-        const typeName = this._toCamelCase(
-          `${this.originalCollection.name}_${field.key}`
-        );
-
-        this.enums[typeName] = field.elements!;
+    for (const field of this._originalCollection.attributes as unknown as AppwriteAttribute[]) {
+      if (field.format === 'enum') {
+        const typeName = this._toCamelCase(`${this._originalCollection.name}_${field.key}`);
+        this._enums[typeName] = field.elements!;
       }
     }
     return this;
   }
 
   public parseAttributes(): CollectionBuilder {
-    for (const field of this.originalCollection
-      .attributes as unknown as AppwriteAttribute[]) {
-      if (field.format === "enum") {
-        this.attributes.push(this._parseEnum(field));
-      } else if (field.type === "relationship") {
-        this.attributes.push(this._parseRelationship(field));
+    for (const field of this._originalCollection.attributes as unknown as AppwriteAttribute[]) {
+      if (field.format === 'enum') {
+        this._attributes.push(this._parseEnum(field));
+      } else if (field.type === 'relationship') {
+        this._attributes.push(this._parseRelationship(field));
       } else {
-        this.attributes.push(this._parsePrimitive(field));
+        this._attributes.push(this._parsePrimitive(field));
       }
     }
-
     return this;
   }
 
   public async build(): Promise<string> {
-    const interfaceName = this._toCamelCase(this.originalCollection.name);
+    const interfaceName = this._toCamelCase(this._originalCollection.name);
     let content = ``;
 
-    for (const name in this.enums) {
-      content += await renderFile("./templates/enum.template.ejs", {
-        name,
-        elements: this.enums[name],
-      });
-      content += "\n";
+    for (const name in this._enums) {
+      const templateFile =
+        (this._config.enumsType === 'native' && './templates/enum-native.template.ejs') ||
+        (this._config.enumsType === 'object' && './templates/enum-object.template.ejs');
+      content += await renderFile(templateFile, { name, elements: this._enums[name] });
+      content += '\n';
     }
 
-    content += await renderFile("./templates/interface.template.ejs", {
-      name: interfaceName,
-      attributes: this.attributes,
-    });
-    content += "\n";
+    const templateFile = './templates/interface.template.ejs';
+    content += await renderFile(templateFile, { name: interfaceName, attributes: this._attributes });
+    content += '\n';
 
     return content;
   }
 
   private _parseRelationship(field: AppwriteAttribute): AttributePayload {
     const typeName = this._toCamelCase(field.relatedCollection!);
-
     switch (field.relationType) {
-      case "oneToOne":
-      case "manyToOne":
-        return {
-          key: field.key,
-          type: typeName,
-          optional: !field.required,
-          array: false,
-        };
-      case "oneToMany":
-      case "manyToMany":
-        return {
-          key: field.key,
-          type: typeName,
-          optional: !field.required,
-          array: true,
-        };
+      case 'oneToMany':
+      case 'manyToMany':
+        return { key: field.key, type: typeName, optional: !field.required, array: true };
+      case 'oneToOne':
+      case 'manyToOne':
+        return { key: field.key, type: typeName, optional: !field.required, array: false };
       default:
-        return {
-          key: field.key,
-          type: "unknown",
-          optional: !field.required,
-          array: false,
-        };
+        return { key: field.key, type: 'unknown', optional: !field.required, array: false };
     }
   }
 
   private _parseEnum(field: AppwriteAttribute): AttributePayload {
-    const typeName = this._toCamelCase(
-      `${this.originalCollection.name}_${field.key}`
-    );
-
-    return {
-      key: field.key,
-      type: typeName,
-      optional: !field.required,
-      array: field.array,
-    };
+    const typeName = this._toCamelCase(`${this._originalCollection.name}_${field.key}`);
+    return { key: field.key, type: typeName, optional: !field.required, array: field.array };
   }
 
   private _parsePrimitive(field: AppwriteAttribute): AttributePayload {
+    // prettier-ignore
     const typeName = (type: string): string => {
       switch (type) {
-        case "string":
-          return "string";
-        case "integer":
-          return "number";
-        case "boolean":
-          return "boolean";
-        case "double":
-          return "number";
-        case "datetime":
-          return "Date";
-        default:
-          return "unknown";
+        case "string":    return "string";
+        case "integer":   return "number";
+        case "boolean":   return "boolean";
+        case "double":    return "number";
+        case "datetime":  return "Date";
+        default:          return "unknown";
       }
     };
-
-    return {
-      key: field.key,
-      type: typeName(field.type),
-      optional: !field.required,
-      array: field.array,
-    };
+    return { key: field.key, type: typeName(field.type), optional: !field.required, array: field.array };
   }
 
   private _toCamelCase(str: string): string {

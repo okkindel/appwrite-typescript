@@ -1,51 +1,76 @@
-import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
-import { CollectionBuilder } from "./collection.builder";
-import { Client, Databases } from "node-appwrite";
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
+import { CollectionBuilder } from './collection.builder';
+import { LibConfig } from './models/lib-config.model';
+import { Client, Databases } from 'node-appwrite';
+import { hideBin } from 'yargs/helpers';
+import yargs from 'yargs';
 
-interface Config {
-  confFile?: string;
-  outName?: string;
-  outDir?: string;
-}
-
-async function initialize(config: Config): Promise<void> {
+async function initialize(libConf: LibConfig): Promise<void> {
   try {
-    const {
-      outName = "appwrite.models.d.ts",
-      confFile = "./config.json",
-      outDir = "./types",
-    } = config;
+    const { output, config, directory } = libConf;
     const client = new Client();
 
     // Read the configuration file
-    const confData = JSON.parse(readFileSync(confFile, "utf8"));
+    const appwriteConfig = JSON.parse(readFileSync(config, 'utf8'));
 
     // Set the client configuration and retrieve the collections
-    client
-      .setEndpoint(confData.endpoint)
-      .setProject(confData.projectId)
-      .setKey(confData.apiKey);
+    client.setEndpoint(appwriteConfig.endpoint).setProject(appwriteConfig.projectId).setKey(appwriteConfig.apiKey);
 
     const database = new Databases(client);
-    const { collections } = await database.listCollections(confData.databaseId);
+    const { collections } = await database.listCollections(appwriteConfig.databaseId);
 
     // Create the output directory if it doesn't exist
-    if (!existsSync(outDir)) {
-      mkdirSync(outDir, { recursive: true });
+    if (!existsSync(directory)) {
+      mkdirSync(directory, { recursive: true });
     }
 
-    let output = `import type { Models } from 'appwrite';\n\n`;
+    let content = `import type { Models } from 'appwrite';\n\n`;
 
     for (const collection of collections) {
-      const builder = new CollectionBuilder(collection);
-      output += await builder.retrieveEnumValues().parseAttributes().build();
+      const builder = new CollectionBuilder(collection, libConf);
+      content += await builder.retrieveEnumValues().parseAttributes().build();
     }
 
     // Write the output to a file
-    writeFileSync(`${outDir}/${outName}`, output);
+    writeFileSync(`${directory}/${output}`, content);
   } catch (error) {
-    console.error("Something went wrong", error);
+    console.error('Something went wrong', error);
   }
 }
 
-initialize({});
+yargs(hideBin(process.argv)).command(
+  '$0',
+  'Generate TypeScript models from Appwrite collections',
+  (yargs) => {
+    return yargs
+      .usage('Usage: $0 <command> [options]')
+      .option('config', {
+        alias: 'c',
+        type: 'string',
+        description: 'The path to the configuration file',
+        required: true,
+      })
+      .option('output', {
+        alias: 'o',
+        type: 'string',
+        description: 'The name of the output file',
+        default: 'appwrite.models.d.ts',
+      })
+      .option('directory', {
+        alias: 'd',
+        type: 'string',
+        description: 'The output directory',
+        default: './types',
+      })
+      .option('enumsType', {
+        alias: 'e',
+        choices: ['native', 'object'],
+        description: 'The type of enums to generate',
+        default: 'object',
+      });
+  },
+  (argv) => {
+    console.log(argv);
+    initialize(argv as any);
+  },
+).argv;
