@@ -45,3 +45,9 @@ npx appwrite-typescript --config ./config.json --output models.ts --directory ./
 - `--output`: Name of the output TypeScript file.
 - `--directory`: Directory where the output file will be saved.
 - `--enumType`: The type of enums to generate. Possible values are `native` and `object`. Default is `object`.
+
+## Results
+
+The script will generate a TypeScript file similar to this:
+
+![Example](./assets/screenshot.png)

@@ -7,9 +7,9 @@ import { Client, Databases } from 'node-appwrite';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
 
-async function initialize(libConf: LibConfig): Promise<void> {
+async function initialize(libConfig: LibConfig): Promise<void> {
   try {
-    const { output, config, directory } = libConf;
+    const { output, config, directory } = libConfig;
     const client = new Client();
 
     // Read the configuration file
@@ -29,7 +29,7 @@ async function initialize(libConf: LibConfig): Promise<void> {
     let content = `import type { Models } from 'appwrite';\n\n`;
 
     for (const collection of collections) {
-      const builder = new CollectionBuilder(collection, libConf);
+      const builder = new CollectionBuilder(collection, collections, libConfig);
       content += await builder.retrieveEnumValues().parseAttributes().build();
     }
 

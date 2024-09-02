@@ -13,14 +13,16 @@ interface AttributePayload {
 }
 
 export class CollectionBuilder {
+  private readonly _remainingCollections: Models.Collection[];
   private readonly _originalCollection: Models.Collection;
   private readonly _config: LibConfig;
 
   private _enums: Record<string, string[]> = {};
   private _attributes: AttributePayload[] = [];
 
-  constructor(collection: Models.Collection, config: LibConfig) {
+  constructor(collection: Models.Collection, remaining: Models.Collection[], config: LibConfig) {
     this._originalCollection = collection;
+    this._remainingCollections = remaining;
     this._config = config;
   }
 
@@ -73,7 +75,9 @@ export class CollectionBuilder {
   }
 
   private _parseRelationship(field: AppwriteAttribute): AttributePayload {
-    const typeName = this._toCamelCase(field.relatedCollection!);
+    const collectionToConnect = this._remainingCollections.find((c) => c.$id === field.relatedCollection);
+    const typeName = this._toCamelCase(collectionToConnect.name || 'unknown');
+
     switch (field.relationType) {
       case 'oneToMany':
       case 'manyToMany':
