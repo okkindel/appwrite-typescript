@@ -1,6 +1,9 @@
-import { LibConfig } from './models/lib-config.model';
+import { AppwriteAttribute } from './models/appwrite.models.js';
+import { LibConfig } from './models/lib-config.model.js';
 import { Models } from 'node-appwrite';
+import { fileURLToPath } from 'url';
 import { renderFile } from 'ejs';
+import * as path from 'path';
 
 interface AttributePayload {
   key: string;
@@ -52,12 +55,18 @@ export class CollectionBuilder {
       const templateFile =
         (this._config.enumsType === 'native' && './templates/enum-native.template.ejs') ||
         (this._config.enumsType === 'object' && './templates/enum-object.template.ejs');
-      content += await renderFile(templateFile, { name, elements: this._enums[name] });
+      content += await renderFile(path.join(fileURLToPath(path.dirname(import.meta.url)), templateFile), {
+        elements: this._enums[name],
+        name: name,
+      });
       content += '\n';
     }
 
     const templateFile = './templates/interface.template.ejs';
-    content += await renderFile(templateFile, { name: interfaceName, attributes: this._attributes });
+    content += await renderFile(path.join(fileURLToPath(path.dirname(import.meta.url)), templateFile), {
+      attributes: this._attributes,
+      name: interfaceName,
+    });
     content += '\n';
 
     return content;

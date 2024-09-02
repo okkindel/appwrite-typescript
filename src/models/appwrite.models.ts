@@ -1,4 +1,4 @@
-interface AppwriteAttribute {
+export interface AppwriteAttribute {
   key: string;
   type:
     | "string"

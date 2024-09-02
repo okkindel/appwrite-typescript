@@ -1,6 +1,8 @@
+#!/usr/bin/env node
+
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
-import { CollectionBuilder } from './collection.builder';
-import { LibConfig } from './models/lib-config.model';
+import { CollectionBuilder } from './collection.builder.js';
+import { LibConfig } from './models/lib-config.model.js';
 import { Client, Databases } from 'node-appwrite';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
@@ -70,7 +72,6 @@ yargs(hideBin(process.argv)).command(
       });
   },
   (argv) => {
-    console.log(argv);
     initialize(argv as any);
   },
 ).argv;
